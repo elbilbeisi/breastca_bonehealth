@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIBL Treatment Navigator — Hadji et al. 2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16303B;
+    --ink-soft:#4A6470;
+    --paper:#FAFBFC;
+    --card:#FFFFFF;
+    --line:#D8E0E4;
+    --treat:#C77B29;        /* orange = active treatment (Fig 1 node colour) */
+    --treat-bg:#FDF4E8;
+    --assess:#2E6E8E;       /* blue = assessment/monitoring (Fig 2 node colour) */
+    --assess-bg:#EDF4F8;
+    --safe:#3E7C4F;
+    --safe-bg:#EEF6F0;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    background:var(--paper); color:var(--ink);
+    font-size:15px; line-height:1.55;
+  }
+  a{color:var(--assess)}
+
+  header{
+    border-bottom:3px solid var(--ink);
+    background:var(--card);
+    padding:26px 20px 20px;
+  }
+  .head-inner{max-width:1120px;margin:0 auto}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;
+  }
+  h1{
+    font-family:'IBM Plex Serif',serif;font-weight:600;
+    font-size:clamp(22px,3.2vw,30px);line-height:1.2;
+  }
+  .head-sub{margin-top:8px;color:var(--ink-soft);font-size:13.5px;max-width:760px}
+  .legend{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;font-size:12.5px}
+  .legend span{display:inline-flex;align-items:center;gap:7px;color:var(--ink-soft)}
+  .swatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  main{max-width:1120px;margin:0 auto;padding:28px 20px 80px;
+       display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+  @media(max-width:860px){main{grid-template-columns:1fr}}
+
+  .panel h2{
+    font-family:'IBM Plex Serif',serif;font-size:19px;font-weight:600;
+    padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:16px;
+  }
+  fieldset{
+    border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--card);padding:16px 18px;margin-bottom:18px;
+  }
+  legend{
+    font-weight:600;font-size:13px;padding:0 8px;letter-spacing:.02em;
+  }
+  legend .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;
+    padding:1px 7px;border-radius:20px;margin-right:6px;vertical-align:1px;
+  }
+  .tag-treat{background:var(--treat-bg);color:var(--treat)}
+  .tag-assess{background:var(--assess-bg);color:var(--assess)}
+
+  .q{margin:12px 0}
+  .q-label{font-weight:500;margin-bottom:6px;font-size:14px}
+  .q-note{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt{
+    position:relative;
+  }
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt label{
+    display:inline-block;padding:7px 14px;border:1px solid var(--line);
+    border-radius:24px;cursor:pointer;font-size:13.5px;background:var(--card);
+    transition:all .12s ease;user-select:none;
+  }
+  .opt input:checked + label{
+    background:var(--ink);color:#fff;border-color:var(--ink);
+  }
+  .opt input:focus-visible + label{outline:2px solid var(--assess);outline-offset:2px}
+  .opt label:hover{border-color:var(--ink-soft)}
+
+  .rf-grid{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
+  .rf{
+    display:flex;align-items:flex-start;gap:9px;padding:7px 10px;
+    border:1px solid transparent;border-radius:7px;cursor:pointer;font-size:13.5px;
+  }
+  .rf:hover{background:var(--assess-bg)}
+  .rf input{margin-top:3px;accent-color:var(--assess);cursor:pointer}
+  .rf.checked{background:var(--assess-bg);border-color:#BFD6E2}
+
+  input[type=number]{
+    font-family:'IBM Plex Mono',monospace;font-size:15px;
+    padding:8px 12px;border:1px solid var(--line);border-radius:8px;width:130px;
+    background:var(--card);color:var(--ink);
+  }
+  input[type=number]:focus{outline:2px solid var(--assess);outline-offset:1px}
+
+  .hidden{display:none !important}
+
+  /* ---------- results ---------- */
+  .results{position:sticky;top:20px;align-self:start}
+  @media(max-width:860px){.results{position:static}}
+  .placeholder{
+    border:1.5px dashed var(--line);border-radius:var(--radius);
+    padding:38px 26px;text-align:center;color:var(--ink-soft);font-size:14px;
+    background:var(--card);
+  }
+  .rec-card{
+    border:1px solid var(--line);border-left:5px solid var(--ink);
+    border-radius:var(--radius);background:var(--card);
+    padding:16px 18px;margin-bottom:16px;
+    animation:rise .25s ease;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.rec-card{animation:none}}
+  .rec-card.treat{border-left-color:var(--treat)}
+  .rec-card.assess{border-left-color:var(--assess)}
+  .rec-card.safe{border-left-color:var(--safe)}
+  .rec-kicker{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.07em;
+    text-transform:uppercase;margin-bottom:5px;
+  }
+  .treat .rec-kicker{color:var(--treat)}
+  .assess .rec-kicker{color:var(--assess)}
+  .safe .rec-kicker{color:var(--safe)}
+  .rec-title{font-family:'IBM Plex Serif',serif;font-size:17px;font-weight:600;margin-bottom:7px}
+  .rec-body{font-size:13.5px}
+  .rec-body ul{margin:7px 0 0 18px}
+  .rec-body li{margin-bottom:5px}
+  .drug{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    background:var(--treat-bg);border-radius:5px;padding:1px 6px;white-space:nowrap;
+  }
+  .assess .drug{background:var(--assess-bg)}
+
+  /* signature: the algorithm trace */
+  .trace{
+    border:1px solid var(--line);border-radius:var(--radius);background:var(--card);
+    padding:14px 18px;margin-bottom:16px;
+  }
+  .trace-h{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;
+  }
+  .trace-step{
+    position:relative;padding:0 0 12px 22px;font-size:13px;
+  }
+  .trace-step::before{
+    content:'';position:absolute;left:5px;top:6px;width:8px;height:8px;
+    border-radius:50%;background:var(--ink);
+  }
+  .trace-step::after{
+    content:'';position:absolute;left:8.5px;top:16px;bottom:-2px;width:1.5px;background:var(--line);
+  }
+  .trace-step:last-child{padding-bottom:0}
+  .trace-step:last-child::after{display:none}
+  .trace-step b{font-weight:600}
+  .trace-step .ans{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+    background:var(--paper);border:1px solid var(--line);border-radius:4px;
+    padding:0 5px;margin-left:5px;
+  }
+
+  .footnotes{
+    font-size:12px;color:var(--ink-soft);border-top:1px solid var(--line);
+    padding-top:12px;margin-top:4px;
+  }
+  .footnotes p{margin-bottom:6px}
+  .disclaimer{
+    margin-top:18px;font-size:11.5px;color:var(--ink-soft);
+    background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <div class="eyebrow">Decision support · Hadji P, et&nbsp;al. J Bone Oncol 2025;53:100694</div>
+    <h1>AIBL Treatment Navigator</h1>
+    <p class="head-sub">Bone-targeted therapy in early breast cancer on endocrine treatment — combined implementation of the recurrence-prevention algorithm (Fig.&nbsp;1) and the bone-health / fracture-prevention algorithm (Fig.&nbsp;2) of the 2025 IOF/CABS/ECTS/IEG/ESCEO/IMS/SIOG joint position statement.</p>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--treat)"></i>Active bone-targeted treatment</span>
+      <span><i class="swatch" style="background:var(--assess)"></i>Assessment &amp; monitoring</span>
+      <span><i class="swatch" style="background:var(--safe)"></i>Lifestyle / no pharmacotherapy</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= FORM ================= -->
+  <section class="panel">
+    <h2>Patient information</h2>
+
+    <fieldset>
+      <legend><span class="tag tag-treat">Fig 1</span>Oncological context</legend>
+
+      <div class="q">
+        <div class="q-label">Is the patient postmenopausal?</div>
+        <div class="opts" data-name="meno">
+          <span class="opt"><input type="radio" name="meno" id="meno-yes" value="yes"><label for="meno-yes">Yes</label></span>
+          <span class="opt"><input type="radio" name="meno" id="meno-no" value="no"><label for="meno-no">No — premenopausal</label></span>
+          <span class="opt"><input type="radio" name="meno" id="meno-na" value="na"><label for="meno-na">Not clinically assessable</label></span>
+        </div>
+        <div class="q-note" id="note-na" style="display:none">Hysterectomy / IUD in situ: treat as postmenopausal only if age &gt; 55 and/or serum FSH is in the postmenopausal range, and the patient is not on therapies affecting the hypophyseal–pituitary–gonadal axis <sup>a</sup>.</div>
+      </div>
+
+      <div class="q hidden" id="q-fsh">
+        <div class="q-label">Age &gt; 55 and/or FSH in postmenopausal range (no interfering therapy)?</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="fsh" id="fsh-yes" value="yes"><label for="fsh-yes">Yes — treat as postmenopausal</label></span>
+          <span class="opt"><input type="radio" name="fsh" id="fsh-no" value="no"><label for="fsh-no">No — treat as premenopausal</label></span>
+        </div>
+      </div>
+
+      <div class="q hidden" id="q-ost">
+        <div class="q-label">(Neo)adjuvant plan includes ovarian suppression therapy or oophorectomy?</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="ost" id="ost-yes" value="yes"><label for="ost-yes">Yes</label></span>
+          <span class="opt"><input type="radio" name="ost" id="ost-no" value="no"><label for="ost-no">No</label></span>
+        </div>
+      </div>
+
+      <div class="q hidden" id="q-chemo">
+        <div class="q-label">Chemotherapy planned?</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="chemo" id="chemo-yes" value="yes"><label for="chemo-yes">Yes</label></span>
+          <span class="opt"><input type="radio" name="chemo" id="chemo-no" value="no"><label for="chemo-no">No</label></span>
+        </div>
+        <div class="q-note">Patients already on weekly oral bisphosphonates for osteoporosis should be considered for a treatment change and follow the algorithm <sup>b</sup>.</div>
+      </div>
+
+      <div class="q hidden" id="q-prog">
+        <div class="q-label">Adverse prognostic factors — 10-year risk of breast cancer death &gt; 12%?</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="prog" id="prog-yes" value="yes"><label for="prog-yes">Yes — &gt; 12%</label></span>
+          <span class="opt"><input type="radio" name="prog" id="prog-no" value="no"><label for="prog-no">No — ≤ 12%</label></span>
+        </div>
+        <div class="q-note">Quantify with <a href="https://breast.predict.cam" target="_blank" rel="noopener">NHS PREDICT</a>: read the <b>"deaths due to breast cancer"</b> component at 10&nbsp;years (not overall mortality), with planned endocrine ± chemotherapy ticked and bisphosphonate <i>unticked</i>. Proxy: node-positive disease generally exceeds 12%.</div>
+      </div>
+
+      <div class="q hidden" id="q-choice">
+        <div class="q-label">Patient preference for continuation therapy (route)</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="choice" id="choice-oral" value="oral"><label for="choice-oral">Daily oral</label></span>
+          <span class="opt"><input type="radio" name="choice" id="choice-iv" value="iv"><label for="choice-iv">Intravenous</label></span>
+          <span class="opt"><input type="radio" name="choice" id="choice-und" value="und"><label for="choice-und">Undecided — show both</label></span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="tag tag-assess">Fig 2</span>Bone health on endocrine therapy</legend>
+
+      <div class="q">
+        <div class="q-label">Lowest T-score (spine or hip, same DXA machine)</div>
+        <input type="number" id="tscore" step="0.1" min="-6" max="4" placeholder="e.g. −1.8" inputmode="decimal">
+        <div class="q-note">Use the lowest T-score from spine or hip <sup>c</sup>.</div>
+      </div>
+
+      <div class="q">
+        <div class="q-label">Clinical risk factors — check all that apply</div>
+        <div class="rf-grid" id="rf-grid">
+          <label class="rf"><input type="checkbox" value="Age &gt; 65 years"> Age &gt; 65 years</label>
+          <label class="rf"><input type="checkbox" value="T-score &lt; −1.5" id="rf-t15" disabled> T-score &lt; −1.5 <span style="color:var(--ink-soft)">&nbsp;(auto from T-score)</span></label>
+          <label class="rf"><input type="checkbox" value="Smoking (current or history)"> Smoking (current or history of)</label>
+          <label class="rf"><input type="checkbox" value="BMI &lt; 24"> BMI &lt; 24</label>
+          <label class="rf"><input type="checkbox" value="Family history of hip fracture"> Family history of hip fracture</label>
+          <label class="rf"><input type="checkbox" value="Personal fragility fracture after age 50"> Personal history of fragility fracture above age 50</label>
+          <label class="rf"><input type="checkbox" value="Vertebral fracture (Genant II or III)"> Vertebral fracture (Genant II or III)</label>
+          <label class="rf"><input type="checkbox" value="Oral glucocorticoids &gt; 6 months"> Oral glucocorticoid use for &gt; 6 months</label>
+        </div>
+      </div>
+
+      <div class="q">
+        <div class="q-label">On-treatment annual BMD loss ≥ 10% at any site (or ≥ 4–5% if osteopenic at baseline)?</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="bmdloss" id="bmdloss-yes" value="yes"><label for="bmdloss-yes">Yes</label></span>
+          <span class="opt"><input type="radio" name="bmdloss" id="bmdloss-no" value="no" checked><label for="bmdloss-no">No / not applicable</label></span>
+        </div>
+      </div>
+
+      <div class="q">
+        <div class="q-label">Preferred first-line antiresorptive if indicated</div>
+        <div class="opts">
+          <span class="opt"><input type="radio" name="ar" id="ar-dmab" value="dmab"><label for="ar-dmab">Denosumab</label></span>
+          <span class="opt"><input type="radio" name="ar" id="ar-zol" value="zol"><label for="ar-zol">i.v. zoledronate</label></span>
+          <span class="opt"><input type="radio" name="ar" id="ar-oral" value="oral"><label for="ar-oral">Oral bisphosphonate</label></span>
+          <span class="opt"><input type="radio" name="ar" id="ar-any" value="any" checked><label for="ar-any">No preference</label></span>
+        </div>
+      </div>
+    </fieldset>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section class="panel results">
+    <h2>Recommendation</h2>
+    <div id="out">
+      <div class="placeholder">Answer the oncological questions and enter a T-score.<br>The recommendation and its path through the algorithm update live.</div>
+    </div>
+    <div class="disclaimer">Decision-support summary of a published position statement — not a substitute for clinical judgement, local licensing, or multidisciplinary review. Ensure dental review before antiresorptive initiation (MRONJ), vitamin D repletion before zoledronate, and renal function assessment.</div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const out = $('#out');
+
+  const radio = name => { const r = document.querySelector(`input[name=${name}]:checked`); return r ? r.value : null; };
+
+  function show(id, on){ $(id).classList.toggle('hidden', !on); }
+
+  function effectiveMeno(){
+    const m = radio('meno');
+    if (m === 'na'){ const f = radio('fsh'); if (!f) return null; return f === 'yes' ? 'yes' : 'no'; }
+    return m;
+  }
+
+  function updateVisibility(){
+    const m = radio('meno');
+    document.getElementById('note-na').style.display = (m === 'na') ? 'block' : 'none';
+    show('#q-fsh', m === 'na');
+    const em = effectiveMeno();
+    show('#q-ost', em === 'no');
+    show('#q-chemo', em === 'yes');
+    const chemo = radio('chemo');
+    const prognosisNeeded = (em === 'yes' && chemo === 'no');
+    show('#q-prog', prognosisNeeded);
+    // continuation choice needed whenever chemo-phase zoledronate given, or high-risk no-chemo path
+    const ost = radio('ost');
+    const prog = radio('prog');
+    const choiceNeeded =
+      (em === 'no' && ost === 'yes') ||
+      (em === 'yes' && chemo === 'yes') ||
+      (em === 'yes' && chemo === 'no' && prog === 'yes');
+    show('#q-choice', choiceNeeded);
+  }
+
+  function tScoreVal(){
+    const v = $('#tscore').value.trim().replace('−','-');
+    if (v === '') return null;
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+
+  function riskFactors(){
+    const t = tScoreVal();
+    const autoRf = $('#rf-t15');
+    if (t !== null && t < -1.5){ autoRf.checked = true; } else { autoRf.checked = false; }
+    $$('#rf-grid .rf').forEach(l => l.classList.toggle('checked', l.querySelector('input').checked));
+    return $$('#rf-grid input:checked').map(i => i.value);
+  }
+
+  const continuationOptions = (choice) => {
+    const oral = `Daily oral <span class="drug">ibandronate 50&nbsp;mg/day</span> or <span class="drug">clodronate 1,600&nbsp;mg/day</span> for 36&nbsp;months <sup>c,d,e</sup>`;
+    const iv = `<span class="drug">i.v. zoledronate 4&nbsp;mg q6&nbsp;months</span> for 36&nbsp;months <sup>c,d</sup>`;
+    if (choice === 'oral') return `<li>${oral}</li>`;
+    if (choice === 'iv') return `<li>${iv}</li>`;
+    return `<li>${oral}</li><li>${iv}</li><li style="color:var(--ink-soft)">Patient choice between routes; may switch oral ↔ i.v. for tolerability <sup>d</sup>.</li>`;
+  };
+
+  function fig1(trace){
+    const em = effectiveMeno();
+    const m = radio('meno');
+    if (!em) return null;
+    if (m === 'na') trace.push(['Menopausal status not clinically assessable', radio('fsh')==='yes' ? 'age/FSH postmenopausal' : 'not confirmed']);
+    trace.push(['Postmenopausal?', em === 'yes' ? 'YES' : 'NO']);
+
+    const choice = radio('choice');
+
+    if (em === 'no'){
+      const ost = radio('ost');
+      if (!ost) return null;
+      trace.push(['(Neo)adjuvant ovarian suppression / oophorectomy?', ost.toUpperCase()]);
+      if (ost === 'no'){
+        return {cls:'safe', kicker:'Fig 1 · Recurrence prevention', title:'No oncological indication for a bone-targeted agent',
+          body:`No cancer-treatment reason to recommend adjuvant bisphosphonate. Manage bone health per Fig.&nbsp;2 below if on therapy that accelerates bone loss.`};
+      }
+      return {cls:'treat', kicker:'Fig 1 · Recurrence prevention', title:'Adjuvant bisphosphonate indicated',
+        body:`<span class="drug">i.v. zoledronate 4&nbsp;mg ×3</span> during (neo)adjuvant chemotherapy, then continuation:<ul>${continuationOptions(choice)}</ul>`};
+    }
+
+    const chemo = radio('chemo');
+    if (!chemo) return null;
+    trace.push(['Chemotherapy planned?', chemo.toUpperCase()]);
+    if (chemo === 'yes'){
+      return {cls:'treat', kicker:'Fig 1 · Recurrence prevention', title:'Adjuvant bisphosphonate indicated',
+        body:`<span class="drug">i.v. zoledronate 4&nbsp;mg ×3</span> during (neo)adjuvant chemotherapy <sup>b</sup>, then continuation:<ul>${continuationOptions(choice)}</ul>`};
+    }
+    const prog = radio('prog');
+    if (!prog) return null;
+    trace.push(['10-yr breast cancer death risk > 12%?', prog.toUpperCase()]);
+    if (prog === 'yes'){
+      return {cls:'treat', kicker:'Fig 1 · Recurrence prevention', title:'Adjuvant bisphosphonate indicated (adverse prognosis)',
+        body:`<ul>${continuationOptions(choice)}</ul>`};
+    }
+    return {cls:'assess', kicker:'Fig 1 · Recurrence prevention', title:'No adjuvant bisphosphonate for recurrence prevention',
+      body:`Assess fracture risk and prescribe bisphosphonate or denosumab according to CTIBL guidelines — see the Fig.&nbsp;2 recommendation below.`};
+  }
+
+  function fig2(trace){
+    const t = tScoreVal();
+    if (t === null) return null;
+    const rfs = riskFactors();
+    const bmdloss = radio('bmdloss') === 'yes';
+    trace.push(['Lowest T-score (spine/hip)', t.toFixed(1)]);
+    trace.push(['Risk factors present', rfs.length ? `${rfs.length} — ${rfs.join('; ')}` : 'none']);
+    if (bmdloss) trace.push(['Annual BMD loss ≥ 10% (≥ 4–5% if osteopenic)', 'YES']);
+
+    const highRisk = (t < -2.0) || (rfs.length >= 2) || bmdloss;
+
+    if (!highRisk){
+      return {cls:'safe', kicker:'Fig 2 · Fracture prevention', title:'Lifestyle measures and surveillance',
+        body:`<ul>
+          <li>Physical exercise per WHO adult activity guidance</li>
+          <li>Vitamin D3 <span class="drug">800–2,000&nbsp;IU/day</span> ± calcium <span class="drug">1,000&nbsp;mg/day</span> if dietary intake low <sup>c</sup></li>
+          <li>Monitor fracture risk and BMD at 1–2-year intervals <sup>b</sup></li>
+        </ul>
+        <p style="margin-top:7px;font-size:12.5px;color:var(--ink-soft)">Escalate to antiresorptive therapy if annual BMD loss ≥ 10% at any site (≥ 4–5% if osteopenic at baseline) or new risk factors emerge; evaluate secondary causes (e.g. vitamin D deficiency).</p>`};
+    }
+
+    const why = bmdloss ? 'accelerated on-treatment BMD loss'
+      : (t < -2.0 && rfs.length < 2) ? 'T-score < −2.0'
+      : (t >= -2.0) ? '≥ 2 clinical risk factors'
+      : 'T-score < −2.0 and ≥ 2 risk factors';
+
+    const ar = radio('ar');
+    let firstLine;
+    if (ar === 'dmab') firstLine = `<li><span class="drug">Denosumab 60&nbsp;mg s.c. q6&nbsp;months</span> for the duration of endocrine therapy (typically up to 5&nbsp;years). On discontinuation, follow with an antiresorptive (preferably i.v. zoledronate, or ≥ 1&nbsp;year oral bisphosphonate) to prevent rebound vertebral fractures <sup>d</sup>.</li>`;
+    else if (ar === 'zol') firstLine = `<li><span class="drug">i.v. zoledronate 4&nbsp;mg q6&nbsp;months</span> for the duration of endocrine therapy (typically up to 5&nbsp;years) <sup>c</sup>. Ensure vitamin D repletion; consider 3-day glucocorticoid cover for acute-phase response.</li>`;
+    else if (ar === 'oral') firstLine = `<li>Weekly oral <span class="drug">alendronate 70&nbsp;mg</span> or <span class="drug">risedronate 35&nbsp;mg</span>, or monthly <span class="drug">ibandronate 150&nbsp;mg</span>, for the duration of endocrine therapy <sup>d</sup>. Reinforce compliance — persistence with oral BP is frequently suboptimal and impacts fracture outcomes.</li>`;
+    else firstLine = `<li>First line: <span class="drug">denosumab 60&nbsp;mg s.c. q6&nbsp;mo</span> or <span class="drug">i.v. zoledronate 4&nbsp;mg q6&nbsp;mo</span> for the duration of endocrine therapy <sup>c</sup></li>
+      <li>Alternative: weekly oral <span class="drug">alendronate 70&nbsp;mg</span> / <span class="drug">risedronate 35&nbsp;mg</span> or monthly <span class="drug">ibandronate 150&nbsp;mg</span> <sup>d</sup></li>
+      <li>If denosumab is used, discontinuation must be followed by an appropriate antiresorptive (rebound risk) <sup>d</sup></li>`;
+
+    return {cls:'treat', kicker:'Fig 2 · Fracture prevention', title:`Antiresorptive therapy indicated — ${why}`,
+      body:`<ul>
+        <li>Exercise + vitamin D3 <span class="drug">800–2,000&nbsp;IU/day</span> ± calcium <span class="drug">1,000&nbsp;mg/day</span></li>
+        ${firstLine}
+        <li>Monitor BMD every 2&nbsp;years; check oral compliance and regularity of denosumab injections / zoledronate infusions</li>
+      </ul>`};
+  }
+
+  function render(){
+    updateVisibility();
+    const trace = [];
+    const r1 = fig1(trace);
+    const t2start = trace.length;
+    const r2 = fig2(trace);
+
+    if (!r1 && !r2){
+      out.innerHTML = `<div class="placeholder">Answer the oncological questions and enter a T-score.<br>The recommendation and its path through the algorithm update live.</div>`;
+      return;
+    }
+
+    let html = '';
+    const card = r => r ? `<div class="rec-card ${r.cls}"><div class="rec-kicker">${r.kicker}</div><div class="rec-title">${r.title}</div><div class="rec-body">${r.body}</div></div>` : '';
+
+    html += card(r1);
+    html += card(r2);
+    if (!r1) html += `<div class="placeholder" style="margin-bottom:16px;padding:18px">Complete the oncological questions for the Fig.&nbsp;1 (recurrence-prevention) recommendation.</div>`;
+    if (!r2) html += `<div class="placeholder" style="margin-bottom:16px;padding:18px">Enter a T-score for the Fig.&nbsp;2 (fracture-prevention) recommendation.</div>`;
+
+    if (trace.length){
+      html += `<div class="trace"><div class="trace-h">Path through the algorithm</div>` +
+        trace.map(s => `<div class="trace-step"><b>${s[0]}</b><span class="ans">${s[1]}</span></div>`).join('') + `</div>`;
+    }
+
+    html += `<div class="footnotes">
+      <p><b>a</b>&nbsp;If not clinically assessable (hysterectomy/IUD), ensure age &gt; 55 and/or postmenopausal serum FSH; no concurrent therapies affecting the hypophyseal–pituitary–gonadal axis.</p>
+      <p><b>b</b>&nbsp;Patients already on weekly oral bisphosphonates for osteoporosis: consider treatment change and follow the algorithm. Fig.&nbsp;2: if annual BMD loss ≥ 10% (≥ 4–5% if osteopenic at baseline) on the same DXA machine, evaluate secondary causes and initiate antiresorptive therapy.</p>
+      <p><b>c</b>&nbsp;Vitamin D3 800–2,000 IU (+ calcium 1,000 mg/day if low-calcium diet). Fig.&nbsp;2 first line: denosumab 60 mg q6 mo or i.v. zoledronate 4 mg q6 mo for the duration of endocrine treatment.</p>
+      <p><b>d</b>&nbsp;May switch oral ↔ i.v. for tolerability. Denosumab discontinuation must be followed by an appropriate antiresorptive. Oral options: alendronate 70 mg or risedronate 35 mg weekly, ibandronate 150 mg monthly.</p>
+      <p><b>e</b>&nbsp;Daily oral ibandronate 50 mg/day or clodronate 1,600 mg/day as in SWOG S0307; continuation duration 2–5 years.</p>
+    </div>`;
+
+    out.innerHTML = html;
+  }
+
+  document.addEventListener('change', render);
+  $('#tscore').addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>
